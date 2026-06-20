@@ -209,11 +209,14 @@ check_system_requirements() {
         print_success "Disk Space: ${available_space}GB (✓ Sufficient)"
     fi
     
-    # Check network connectivity with retry
+    # Check network connectivity with retry (using HTTP check instead of ICMP ping,
+    # since ICMP is often blocked on VPS/Docker and we actually need HTTP access)
     local network_ok=false
     local network_attempts=0
     while [[ $network_ok == false ]] && [[ $network_attempts -lt 3 ]]; do
-        if ping -c 1 google.com >/dev/null 2>&1 || ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+        if curl -sS --max-time 5 --head https://registry.npmjs.org >/dev/null 2>&1 \
+           || curl -sS --max-time 5 --head https://deb.nodesource.com >/dev/null 2>&1 \
+           || wget -q --spider --timeout=5 https://google.com 2>/dev/null; then
             print_success "Network: Connected (✓)"
             network_ok=true
         else
